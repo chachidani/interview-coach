@@ -7,4 +7,5 @@ type User struct {
 	Username string               `bson:"username"`
 	Email    string               `bson:"email"`
 	Rooms    []primitive.ObjectID `bson:"rooms"`
+	Password string               `bson:"password"`
 }

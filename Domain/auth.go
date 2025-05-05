@@ -5,6 +5,10 @@ import (
 
 )
 
+const (
+	CollectionUser = "users"
+)
+
 // Signup
 
 type SignUpRequest struct {
@@ -55,4 +59,12 @@ type LogoutRequest struct {
 
 type LogoutResponse struct {
 	Message string `json:"message"`
+}
+
+type LogoutRepository interface {
+	Logout(c context.Context, logoutRequest LogoutRequest) (LogoutResponse, error)
+}
+
+type LogoutUsecase interface {
+	Logout(c context.Context, logoutRequest LogoutRequest) (LogoutResponse, error)
 }

@@ -62,7 +62,8 @@ func (uc *SignUpController) GetUser(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, users)
+	successMessage := "Users fetched successfully"
+	c.IndentedJSON(http.StatusOK, config.ResponseData{Error: false, SuccessResponse: true, SuccessMessage: &successMessage, Data: users})
 }
 
 

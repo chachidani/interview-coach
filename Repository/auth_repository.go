@@ -7,7 +7,6 @@ import (
 	domain "github.com/chachidani/interview-coach-backend/Domain"
 	"github.com/chachidani/interview-coach-backend/Infrastructure/middleware"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -56,7 +55,7 @@ func (s *signUpRepository) SignUp(c context.Context, signUpRequest domain.SignUp
 		Username: signUpRequest.Username,
 		Email:    signUpRequest.Email,
 		Password: hashedPassword,
-		Rooms:    []primitive.ObjectID{},
+		Rooms:    []string{},
 	}
 
 	_, err = collection.InsertOne(c, user)
@@ -113,8 +112,6 @@ func (l *loginRepository) Login(c context.Context, loginRequest domain.LoginRequ
 		Token:   token,
 	}, nil
 
-	
-	
 }
 
 func NewLoginRepository(database mongo.Database, collection string, passwordService *middleware.PasswordService, jwtService *middleware.JWTService) domain.LoginRepository {
@@ -128,7 +125,7 @@ func NewLoginRepository(database mongo.Database, collection string, passwordServ
 
 // logout repository
 type logoutRepository struct {
-	database mongo.Database
+	database   mongo.Database
 	collection string
 }
 
@@ -143,4 +140,3 @@ func NewLogoutRepository(database mongo.Database, collection string) domain.Logo
 func (l *logoutRepository) Logout(c context.Context, logoutRequest domain.LogoutRequest) (domain.LogoutResponse, error) {
 	panic("unimplemented")
 }
-

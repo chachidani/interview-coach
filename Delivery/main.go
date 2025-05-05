@@ -24,6 +24,7 @@ func main() {
 
 	if mongoURI == "" {
 		mongoURI = "mongodb://localhost:27017"
+		fmt.Println("DBUri environment variable is not set")
 	}
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))

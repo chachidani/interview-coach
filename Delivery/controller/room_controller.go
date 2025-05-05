@@ -20,27 +20,23 @@ func (uc *RoomController) CreateRoom(c *gin.Context) {
 		return
 	}
 
-    roomResponse, err := uc.RoomUsecase.CreateRoom(c, room)
+	roomResponse, err := uc.RoomUsecase.CreateRoom(c, room)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})
 		return
 	}
 
-	c.IndentedJSON(http.StatusCreated, roomResponse)
+	c.IndentedJSON(http.StatusCreated, config.ResponseData{Error: false, SuccessResponse: true, SuccessMessage: &roomResponse})
 }
 
-
 func (uc *RoomController) GetRoom(c *gin.Context) {
-	
-
 	roomID := c.Param("id")
-	objectID, err := primitive.ObjectIDFromHex(roomID)
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})
+	if roomID == "" {
+		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: "room ID is required", SuccessResponse: false})
 		return
 	}
 
-	roomResponse, err := uc.RoomUsecase.GetRoom(c, objectID)
+	roomResponse, err := uc.RoomUsecase.GetRoom(c, roomID)
 	if err != nil {
 		if err.Error() == "room not found" {
 			c.IndentedJSON(http.StatusNotFound, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})
@@ -50,12 +46,21 @@ func (uc *RoomController) GetRoom(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, roomResponse)
-}	
-
+	c.IndentedJSON(http.StatusOK, config.ResponseData{
+		Error:           false,
+		SuccessResponse: true,
+		SuccessMessage:  nil,
+		Data:            roomResponse,
+	})
+}
 
 func (uc *RoomController) GetRoomsWithUserID(c *gin.Context) {
 	userID := c.Param("id")
+	if userID == "" {
+		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: "user ID is required", SuccessResponse: false})
+		return
+	}
+
 	objectID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})
@@ -68,43 +73,34 @@ func (uc *RoomController) GetRoomsWithUserID(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, rooms)
+	c.IndentedJSON(http.StatusOK, config.ResponseData{
+		Error:           false,
+		SuccessResponse: true,
+		Data:            rooms,
+	})
 }
-
 
 func (uc *RoomController) UpdateRoom(c *gin.Context) {
 	roomID := c.Param("id")
-	objectID, err := primitive.ObjectIDFromHex(roomID)
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})	
-		return
-	}
-
 	var room domain.Room
 	if err := c.ShouldBindJSON(&room); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})
 		return
-	}		
+	}
 
-	roomResponse, err := uc.RoomUsecase.UpdateRoom(c, objectID, room)
+	roomResponse, err := uc.RoomUsecase.UpdateRoom(c, roomID, room)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, roomResponse)
-}	
-
+	successMessage := "Room updated successfully"
+	c.IndentedJSON(http.StatusOK, config.ResponseData{Error: false, SuccessResponse: true, SuccessMessage: &successMessage, Data: roomResponse})
+}
 
 func (uc *RoomController) DeleteRoom(c *gin.Context) {
 	roomID := c.Param("id")
-	objectID, err := primitive.ObjectIDFromHex(roomID)
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})	
-		return
-	}
-
-	err = uc.RoomUsecase.DeleteRoom(c, objectID)
+	err := uc.RoomUsecase.DeleteRoom(c, roomID)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})
 		return
@@ -114,29 +110,25 @@ func (uc *RoomController) DeleteRoom(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, config.ResponseData{Error: false, SuccessResponse: true, SuccessMessage: &successMessage})
 }
 
-
 func (uc *RoomController) AddMessageToRoom(c *gin.Context) {
 	roomID := c.Param("id")
-	objectID, err := primitive.ObjectIDFromHex(roomID)
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})	
-		return
-	}
-
 	var message domain.Message
 	if err := c.ShouldBindJSON(&message); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})	
+		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})
 		return
 	}
 
-	roomResponse, err := uc.RoomUsecase.AddMessageToRoom(c, objectID, message)
+	roomResponse, err := uc.RoomUsecase.AddMessageToRoom(c, roomID, message)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})	
+		c.IndentedJSON(http.StatusInternalServerError, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})
 		return
 	}
+	successMessage := "Message added to room successfully"
 
-	c.IndentedJSON(http.StatusOK, roomResponse)
+	c.IndentedJSON(http.StatusOK, config.ResponseData{
+		Error:           false,
+		SuccessResponse: true,
+		SuccessMessage:  &successMessage,
+		Data:            roomResponse,
+	})
 }
-
-
-

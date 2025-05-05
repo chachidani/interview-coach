@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
+	bootstrap "github.com/chachidani/interview-coach-backend/Bootstrap"
 	domain "github.com/chachidani/interview-coach-backend/Domain"
 )
 
@@ -18,9 +18,10 @@ func NewGeminiRepository() domain.GeminiRepository {
 }
 
 func (g *geminiRepository) GenerateResponse(request domain.GeminiRequest) (string, error) {
-	apiKey := os.Getenv("GEMINI_API_KEY")
+	apiKey := bootstrap.NewEnv().GeminiAPIKey
 	if apiKey == "" {
-		return "", fmt.Errorf("GEMINI_API_KEY environment variable is not set")
+		fmt.Println("GEMINI_API_KEY environment variable is not set")
+		// return "", fmt.Errorf("GEMINI_API_KEY environment variable is not set")
 	}
 
 	payload := map[string]interface{}{
@@ -33,7 +34,7 @@ func (g *geminiRepository) GenerateResponse(request domain.GeminiRequest) (strin
 		return "", fmt.Errorf("failed to marshal request: %v", err)
 	}
 
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=%s", apiKey)
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=%s", apiKey)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %v", err)

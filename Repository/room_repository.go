@@ -19,7 +19,7 @@ type roomRepository struct {
 }
 
 // DeleteRoom implements domain.RoomRepository.
-func (r *roomRepository) DeleteRoom(c context.Context, roomID primitive.ObjectID) error {
+func (r *roomRepository) DeleteRoom(c context.Context, roomID string) error {
 	collection := r.database.Collection(r.collection)
 	_, err := collection.DeleteOne(c, bson.M{"_id": roomID})
 	if err != nil {
@@ -29,7 +29,7 @@ func (r *roomRepository) DeleteRoom(c context.Context, roomID primitive.ObjectID
 }
 
 // GetRoom implements domain.RoomRepository.
-func (r *roomRepository) GetRoom(c context.Context, roomID primitive.ObjectID) (domain.Room, error) {
+func (r *roomRepository) GetRoom(c context.Context, roomID string) (domain.Room, error) {
 	collection := r.database.Collection(r.collection)
 	var room domain.Room
 	err := collection.FindOne(c, bson.M{"_id": roomID}).Decode(&room)
@@ -54,11 +54,10 @@ func (r *roomRepository) GetRoomsWithUserID(c context.Context, userID primitive.
 		return nil, err
 	}
 	return rooms, nil
-
 }
 
 // UpdateRoom implements domain.RoomRepository.
-func (r *roomRepository) UpdateRoom(c context.Context, roomID primitive.ObjectID, room domain.Room) (domain.Room, error) {
+func (r *roomRepository) UpdateRoom(c context.Context, roomID string, room domain.Room) (domain.Room, error) {
 	collection := r.database.Collection(r.collection)
 	_, err := collection.UpdateOne(c, bson.M{"_id": roomID}, bson.M{"$set": room})
 	if err != nil {
@@ -111,17 +110,36 @@ func (r *roomRepository) CreateRoom(c context.Context, room domain.Room) (string
 	}
 	room.CreatedAt = time.Now().Unix()
 
+	// Create a composite ID using roomID and topic
+	roomID := primitive.NewObjectID()
+	compositeID := fmt.Sprintf("%s_%s", roomID.Hex(), room.Topic)
+	room.ID = compositeID
+
 	// Save room to database
 	collection := r.database.Collection(r.collection)
 	_, err = collection.InsertOne(c, room)
 	if err != nil {
 		return "", err
 	}
+
+	// Update user's rooms array with the composite ID
+	userCollection := r.database.Collection("users")
+	_, err = userCollection.UpdateOne(
+		c,
+		bson.M{"_id": room.UserID},
+		bson.M{"$push": bson.M{"rooms": compositeID}},
+	)
+	if err != nil {
+		// If updating user fails, we should delete the room to maintain consistency
+		_, _ = collection.DeleteOne(c, bson.M{"_id": compositeID})
+		return "", fmt.Errorf("failed to update user with room ID: %v", err)
+	}
+
 	return "Room created successfully", nil
 }
 
 // AddMessageToRoom implements domain.RoomRepository.
-func (r *roomRepository) AddMessageToRoom(c context.Context, roomID primitive.ObjectID, message domain.Message) (domain.Room, error) {
+func (r *roomRepository) AddMessageToRoom(c context.Context, roomID string, message domain.Message) (domain.Room, error) {
 	// First get the current room
 	collection := r.database.Collection(r.collection)
 	var room domain.Room
@@ -129,7 +147,7 @@ func (r *roomRepository) AddMessageToRoom(c context.Context, roomID primitive.Ob
 	if err != nil {
 		return domain.Room{}, err
 	}
-    
+
 	// Add user's message to the room
 	room.Messages = append(room.Messages, message)
 

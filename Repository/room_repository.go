@@ -3,10 +3,10 @@ package repository
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	domain "github.com/chachidani/interview-coach-backend/Domain"
+	infrastructure "github.com/chachidani/interview-coach-backend/Infrastructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -151,15 +151,8 @@ func (r *roomRepository) AddMessageToRoom(c context.Context, roomID string, mess
 	// Add user's message to the room
 	room.Messages = append(room.Messages, message)
 
-	// Format message history for prompt
-	var messageHistory strings.Builder
-	for _, msg := range room.Messages {
-		if msg.Sender == "user" {
-			messageHistory.WriteString(fmt.Sprintf("User: %s\n", msg.Text))
-		} else {
-			messageHistory.WriteString(fmt.Sprintf("AI: %s\n", msg.Text))
-		}
-	}
+	// Format message history for prompt using the reusable builder
+	messageHistory := infrastructure.BuildMessageHistory(room)
 
 	// Create prompt for Gemini including context of the interview
 	prompt := fmt.Sprintf(`You are an AI interviewer. The role is %s and the topic is %s.
@@ -170,7 +163,7 @@ Previous conversation:
 Please provide a relevant follow-up question or response based on the conversation above.`,
 		room.Role,
 		room.Topic,
-		messageHistory.String())
+		messageHistory)
 
 	geminiRequest := domain.GeminiRequest{
 		Contents: []struct {

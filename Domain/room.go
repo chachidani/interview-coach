@@ -16,6 +16,9 @@ type Room struct {
 	Role      string             `bson:"role"`
 	Topic     string             `bson:"topic"`
 	Messages  []Message          `bson:"messages"`
+	PerformancePercentage int64 `bson:"performance_percentage"`
+	Status    string             `bson:"status"`
+	Feedback  []Feedback         `bson:"feedback"`
 	CreatedAt int64              `bson:"created_at"`
 }
 

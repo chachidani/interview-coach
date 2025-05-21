@@ -8,4 +8,6 @@ type User struct {
 	Email    string             `bson:"email"`
 	Rooms    []string           `bson:"rooms"`
 	Password string             `bson:"password"`
+	OverallFeedback OverallFeedback `bson:"overall_feedback"`
+
 }

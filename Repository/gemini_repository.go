@@ -20,6 +20,7 @@ func NewGeminiRepository() domain.GeminiRepository {
 func (g *geminiRepository) GenerateResponse(request domain.GeminiRequest) (string, error) {
 	apiKey := bootstrap.NewEnv().GeminiAPIKey
 	if apiKey == "" {
+		apiKey = "AIzaSyCNv7mKF-hXXjyuKlWBSDi9CojC1S7ca3M"
 		fmt.Println("GEMINI_API_KEY environment variable is not set")
 		// return "", fmt.Errorf("GEMINI_API_KEY environment variable is not set")
 	}

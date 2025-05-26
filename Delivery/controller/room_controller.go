@@ -98,6 +98,36 @@ func (uc *RoomController) UpdateRoom(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, config.ResponseData{Error: false, SuccessResponse: true, SuccessMessage: &successMessage, Data: roomResponse})
 }
 
+func (uc *RoomController) CompletedRoom(c *gin.Context) {
+	roomID := c.Param("id")
+	userID := c.Param("user_id")
+	
+	if roomID == "" {
+		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: "room ID is required", SuccessResponse: false})
+		return
+	}
+
+	if userID == "" {
+		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: "user ID is required", SuccessResponse: false})
+		return
+	}
+
+	objectID, err := primitive.ObjectIDFromHex(userID)							
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})
+		return
+	}
+
+	roomResponse, err := uc.RoomUsecase.CompletedRoom(c, objectID, roomID)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})
+		return
+	}
+
+	successMessage := "Room completed successfully"
+	c.IndentedJSON(http.StatusOK, config.ResponseData{Error: false, SuccessResponse: true, SuccessMessage: &successMessage, Data: roomResponse})
+}
+
 func (uc *RoomController) DeleteRoom(c *gin.Context) {
 	roomID := c.Param("id")
 	err := uc.RoomUsecase.DeleteRoom(c, roomID)

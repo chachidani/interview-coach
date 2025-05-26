@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -113,7 +114,7 @@ func (r *roomRepository) CreateRoom(c context.Context, room domain.Room) (string
 	// Create a composite ID using roomID and topic
 	roomID := primitive.NewObjectID()
 	compositeID := fmt.Sprintf("%s_%s", roomID.Hex(), room.Topic)
-	room.ID = compositeID
+	room.ID = roomID
 
 	// Save room to database
 	collection := r.database.Collection(r.collection)
@@ -201,6 +202,134 @@ Please provide a relevant follow-up question or response based on the conversati
 		bson.M{"_id": roomID},
 		bson.M{"$set": bson.M{"messages": room.Messages}},
 	)
+	if err != nil {
+		return domain.Room{}, err
+	}
+
+	return room, nil
+}
+
+// CompletedRoom implements domain.RoomRepository.
+func (r *roomRepository) CompletedRoom(c context.Context, userID primitive.ObjectID, roomID string) (domain.Room, error) {
+	collection := r.database.Collection(r.collection)
+	var room domain.Room
+	err := collection.FindOne(c, bson.M{"_id": roomID}).Decode(&room)
+	if err != nil {
+		return domain.Room{}, err
+	}
+
+	room.Status = "completed"
+
+	// Calculate performance percentage based on feedback
+	room.PerformancePercentage = 0
+	room.Feedback = []domain.Feedback{}
+
+	// Process messages in pairs (AI question + User answer)
+	for i := 0; i < len(room.Messages)-1; i += 2 {
+		if i+1 >= len(room.Messages) {
+			break
+		}
+
+		aiMessage := room.Messages[i]
+		userMessage := room.Messages[i+1]
+
+		// Skip if not a valid AI-User pair
+		if aiMessage.Sender != "ai" || userMessage.Sender != "user" {
+			continue
+		}
+
+		// Create feedback for this message pair
+		feedback := domain.Feedback{
+			ID:              primitive.NewObjectID(),
+			UserID:          userID,
+			RoomID:          room.ID,
+			MessageID:       userMessage.ID,
+			Question:        aiMessage.Text,
+			Answer:          userMessage.Text,
+			Strength:        []string{}, // Will be populated by AI
+			ToImprove:       []string{}, // Will be populated by AI
+			ScorePercentage: 0,          // Will be calculated by AI
+			CreatedAt:       time.Now().Unix(),
+		}
+
+		// Generate feedback using Gemini
+		prompt := fmt.Sprintf(`You are an AI interviewer providing feedback. The role is %s and the topic is %s.
+
+Question: %s
+Answer: %s
+
+Please provide:
+1. List of strengths in the answer
+2. Areas for improvement
+3. Score percentage (0-100)
+
+Format your response as JSON:
+{
+    "strength": ["strength1", "strength2"],
+    "to_improve": ["improvement1", "improvement2"],
+    "score_percentage": 85
+}`, room.Role, room.Topic, aiMessage.Text, userMessage.Text)
+
+		geminiRequest := domain.GeminiRequest{
+			Contents: []struct {
+				Parts []struct {
+					Text string `json:"text"`
+				} `json:"parts"`
+			}{
+				{
+					Parts: []struct {
+						Text string `json:"text"`
+					}{
+						{Text: prompt},
+					},
+				},
+			},
+		}
+
+		feedbackResponse, err := r.geminiRepository.GenerateResponse(geminiRequest)
+		if err != nil {
+			return domain.Room{}, fmt.Errorf("failed to generate feedback: %v", err)
+		}
+
+		// Parse the JSON response
+		var feedbackData struct {
+			Strength        []string `json:"strength"`
+			ToImprove       []string `json:"to_improve"`
+			ScorePercentage int      `json:"score_percentage"`
+		}
+
+		if err := json.Unmarshal([]byte(feedbackResponse), &feedbackData); err != nil {
+			return domain.Room{}, fmt.Errorf("failed to parse feedback response: %v", err)
+		}
+
+		// Update feedback with AI-generated data
+		feedback.Strength = feedbackData.Strength
+		feedback.ToImprove = feedbackData.ToImprove
+		feedback.ScorePercentage = feedbackData.ScorePercentage
+
+		// Add feedback to room
+		room.Feedback = append(room.Feedback, feedback)
+
+		// Update performance percentage
+		room.PerformancePercentage += int64(feedback.ScorePercentage)
+	}
+
+	// Calculate average performance percentage
+	if len(room.Feedback) > 0 {
+		room.PerformancePercentage = room.PerformancePercentage / int64(len(room.Feedback))
+	}
+
+	// Save feedbacks to feedback collection
+	feedbackCollection := r.database.Collection(domain.FeedbackCollection)
+	for _, feedback := range room.Feedback {
+		_, err := feedbackCollection.InsertOne(c, feedback)
+		if err != nil {
+			return domain.Room{}, fmt.Errorf("failed to save feedback: %v", err)
+		}
+	}
+
+	// Update room in database
+	_, err = collection.UpdateOne(c, bson.M{"_id": roomID}, bson.M{"$set": room})
 	if err != nil {
 		return domain.Room{}, err
 	}

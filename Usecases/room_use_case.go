@@ -43,6 +43,11 @@ func (r *roomUsecase) UpdateRoom(c context.Context, roomID string, room domain.R
 	return r.roomRepository.UpdateRoom(c, roomID, room)
 }
 
+// CompletedRoom implements domain.RoomUsecase.
+func (r *roomUsecase) CompletedRoom(c context.Context, userID primitive.ObjectID, roomID string) (domain.Room, error) {
+	return r.roomRepository.CompletedRoom(c, userID, roomID)
+}	
+
 func NewRoomUsecase(roomRepository domain.RoomRepository, timeout time.Duration) domain.RoomUsecase {
 	return &roomUsecase{
 		roomRepository: roomRepository,

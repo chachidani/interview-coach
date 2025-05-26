@@ -11,7 +11,7 @@ const (
 )
 
 type Room struct {
-	ID        string             `bson:"_id,omitempty"`
+	ID        primitive.ObjectID `bson:"_id,omitempty"`
 	UserID    primitive.ObjectID `bson:"user_id"`
 	Role      string             `bson:"role"`
 	Topic     string             `bson:"topic"`
@@ -29,6 +29,7 @@ type RoomRequest struct {
 }
 
 type Message struct {
+	ID      primitive.ObjectID `bson:"_id,omitempty"`
 	Sender    string `bson:"sender"` // "user" or "ai"
 	Text      string `bson:"text"`
 	VoiceURL  string `bson:"voice_url,omitempty"`
@@ -42,6 +43,7 @@ type RoomRepository interface {
 	UpdateRoom(c context.Context, roomID string, room Room) (Room, error)
 	DeleteRoom(c context.Context, roomID string) error
 	AddMessageToRoom(c context.Context, roomID string, message Message) (Room, error)
+	CompletedRoom(c context.Context, userID primitive.ObjectID, roomID string) (Room, error)
 }
 
 type RoomUsecase interface {
@@ -51,4 +53,5 @@ type RoomUsecase interface {
 	UpdateRoom(c context.Context, roomID string, room Room) (Room, error)
 	DeleteRoom(c context.Context, roomID string) error
 	AddMessageToRoom(c context.Context, roomID string, message Message) (Room, error)
+	CompletedRoom(c context.Context, userID primitive.ObjectID, roomID string) (Room, error)
 }

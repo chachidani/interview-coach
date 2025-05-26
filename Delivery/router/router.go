@@ -19,6 +19,7 @@ func Setup(env *bootstrap.Env, timeout time.Duration, db mongo.Database, r *gin.
 	middleware.SetJWTService(jwtService)
 	passwordService := middleware.NewPasswordService()
 	geminiRepository := repository.NewGeminiRepository()
+	roomRepository := repository.NewRoomRepository(db, domain.CollectionRoom, geminiRepository)
 
 	publicRouter := r.Group("/api/v1")
 	NewSignUpRoutes(publicRouter, env, timeout, db, passwordService)
@@ -28,28 +29,7 @@ func Setup(env *bootstrap.Env, timeout time.Duration, db mongo.Database, r *gin.
 	protectedRouter.Use(middleware.AuthMiddleware())
 	NewRoomRoutes(protectedRouter, env, timeout, db, geminiRepository)
 
-	// // Initialize repositories
-	// roomRepository := repository.NewRoomRepository(db, domain.CollectionRoom, geminiRepository)
-
-	// // Initialize usecases
-	// roomUsecase := usecases.NewRoomUsecase(roomRepository, timeout)
-
-	// // Initialize controllers
-	// roomController := controller.RoomController{
-	// 	RoomUsecase: roomUsecase,
-	// }
-
-	// Setup routes
-	// api := r.Group("/api")
-	// {
-	// 	// Room routes
-	// 	api.POST("/rooms", roomController.CreateRoom)
-	// 	api.GET("/rooms/:id", roomController.GetRoom)
-	// 	api.GET("/rooms/user/:id", roomController.GetRoomsWithUserID)
-	// 	api.PUT("/rooms/:id", roomController.UpdateRoom)
-	// 	api.DELETE("/rooms/:id", roomController.DeleteRoom)
-	// 	api.POST("/rooms/:id/messages", roomController.AddMessageToRoom)
-	// }
+	NewOverallFeedbackRoutes(protectedRouter, env, timeout, &db, geminiRepository, roomRepository)
 }
 
 func NewSignUpRoutes(router *gin.RouterGroup, env *bootstrap.Env, timeout time.Duration, db mongo.Database, passwordService *middleware.PasswordService) {
@@ -80,4 +60,13 @@ func NewRoomRoutes(router *gin.RouterGroup, env *bootstrap.Env, timeout time.Dur
 	router.PUT("/rooms/:id", rc.UpdateRoom)
 	router.DELETE("/rooms/:id", rc.DeleteRoom)
 	router.POST("/rooms/:id/messages", rc.AddMessageToRoom)
+}
+
+func NewOverallFeedbackRoutes(router *gin.RouterGroup, env *bootstrap.Env, timeout time.Duration, db *mongo.Database, geminiRepository domain.GeminiRepository, roomRepository domain.RoomRepository) {
+	rr := repository.NewOverallFeedbackRepository(db, domain.CollectionOverallFeedback, geminiRepository , roomRepository)
+	rc := &controller.OverallFeedbackController{
+		OverallFeedbackUsecase: usecases.NewOverallFeedbackUsecase(rr, timeout),
+	}
+	router.POST("/overall-feedbacks", rc.CreateOverallFeedback)
+	router.GET("/overall-feedbacks/:id", rc.GetOverallFeedback)
 }

@@ -21,8 +21,13 @@ type roomRepository struct {
 
 // DeleteRoom implements domain.RoomRepository.
 func (r *roomRepository) DeleteRoom(c context.Context, roomID string) error {
+	objectID, err := primitive.ObjectIDFromHex(roomID)
+	if err != nil {
+		return fmt.Errorf("invalid room ID format: %v", err)
+	}
+
 	collection := r.database.Collection(r.collection)
-	_, err := collection.DeleteOne(c, bson.M{"_id": roomID})
+	_, err = collection.DeleteOne(c, bson.M{"_id": objectID})
 	if err != nil {
 		return err
 	}
@@ -31,9 +36,14 @@ func (r *roomRepository) DeleteRoom(c context.Context, roomID string) error {
 
 // GetRoom implements domain.RoomRepository.
 func (r *roomRepository) GetRoom(c context.Context, roomID string) (domain.Room, error) {
+	objectID, err := primitive.ObjectIDFromHex(roomID)
+	if err != nil {
+		return domain.Room{}, fmt.Errorf("invalid room ID format: %v", err)
+	}
+
 	collection := r.database.Collection(r.collection)
 	var room domain.Room
-	err := collection.FindOne(c, bson.M{"_id": roomID}).Decode(&room)
+	err = collection.FindOne(c, bson.M{"_id": objectID}).Decode(&room)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return domain.Room{}, fmt.Errorf("room not found")
@@ -59,8 +69,13 @@ func (r *roomRepository) GetRoomsWithUserID(c context.Context, userID primitive.
 
 // UpdateRoom implements domain.RoomRepository.
 func (r *roomRepository) UpdateRoom(c context.Context, roomID string, room domain.Room) (domain.Room, error) {
+	objectID, err := primitive.ObjectIDFromHex(roomID)
+	if err != nil {
+		return domain.Room{}, fmt.Errorf("invalid room ID format: %v", err)
+	}
+
 	collection := r.database.Collection(r.collection)
-	_, err := collection.UpdateOne(c, bson.M{"_id": roomID}, bson.M{"$set": room})
+	_, err = collection.UpdateOne(c, bson.M{"_id": objectID}, bson.M{"$set": room})
 	if err != nil {
 		return domain.Room{}, err
 	}
@@ -141,15 +156,21 @@ func (r *roomRepository) CreateRoom(c context.Context, room domain.Room) (string
 
 // AddMessageToRoom implements domain.RoomRepository.
 func (r *roomRepository) AddMessageToRoom(c context.Context, roomID string, message domain.Message) (domain.Room, error) {
+	objectID, err := primitive.ObjectIDFromHex(roomID)
+	if err != nil {
+		return domain.Room{}, fmt.Errorf("invalid room ID format: %v", err)
+	}
+
 	// First get the current room
 	collection := r.database.Collection(r.collection)
 	var room domain.Room
-	err := collection.FindOne(c, bson.M{"_id": roomID}).Decode(&room)
+	err = collection.FindOne(c, bson.M{"_id": objectID}).Decode(&room)
 	if err != nil {
 		return domain.Room{}, err
 	}
 
 	// Add user's message to the room
+	message.ID = primitive.NewObjectID() // Ensure message has an ID
 	room.Messages = append(room.Messages, message)
 
 	// Format message history for prompt using the reusable builder
@@ -190,6 +211,7 @@ Please provide a relevant follow-up question or response based on the conversati
 
 	// Add AI's response to the room
 	aiMessage := domain.Message{
+		ID:        primitive.NewObjectID(),
 		Sender:    "ai",
 		Text:      aiResponse,
 		Timestamp: time.Now().Unix(),
@@ -199,7 +221,7 @@ Please provide a relevant follow-up question or response based on the conversati
 	// Update room in database
 	_, err = collection.UpdateOne(
 		c,
-		bson.M{"_id": roomID},
+		bson.M{"_id": objectID},
 		bson.M{"$set": bson.M{"messages": room.Messages}},
 	)
 	if err != nil {
@@ -211,9 +233,14 @@ Please provide a relevant follow-up question or response based on the conversati
 
 // CompletedRoom implements domain.RoomRepository.
 func (r *roomRepository) CompletedRoom(c context.Context, userID primitive.ObjectID, roomID string) (domain.Room, error) {
+	objectID, err := primitive.ObjectIDFromHex(roomID)
+	if err != nil {
+		return domain.Room{}, fmt.Errorf("invalid room ID format: %v", err)
+	}
+
 	collection := r.database.Collection(r.collection)
 	var room domain.Room
-	err := collection.FindOne(c, bson.M{"_id": roomID}).Decode(&room)
+	err = collection.FindOne(c, bson.M{"_id": objectID}).Decode(&room)
 	if err != nil {
 		return domain.Room{}, err
 	}
@@ -329,7 +356,7 @@ Format your response as JSON:
 	}
 
 	// Update room in database
-	_, err = collection.UpdateOne(c, bson.M{"_id": roomID}, bson.M{"$set": room})
+	_, err = collection.UpdateOne(c, bson.M{"_id": objectID}, bson.M{"$set": room})
 	if err != nil {
 		return domain.Room{}, err
 	}

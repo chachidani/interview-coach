@@ -63,10 +63,10 @@ func NewRoomRoutes(router *gin.RouterGroup, env *bootstrap.Env, timeout time.Dur
 }
 
 func NewOverallFeedbackRoutes(router *gin.RouterGroup, env *bootstrap.Env, timeout time.Duration, db *mongo.Database, geminiRepository domain.GeminiRepository, roomRepository domain.RoomRepository) {
-	rr := repository.NewOverallFeedbackRepository(db, domain.CollectionOverallFeedback, geminiRepository , roomRepository)
+	rr := repository.NewOverallFeedbackRepository(db, domain.CollectionOverallFeedback, geminiRepository, roomRepository)
 	rc := &controller.OverallFeedbackController{
 		OverallFeedbackUsecase: usecases.NewOverallFeedbackUsecase(rr, timeout),
 	}
 	router.POST("/overall-feedbacks", rc.CreateOverallFeedback)
-	router.GET("/overall-feedbacks/:id", rc.GetOverallFeedback)
+	router.GET("/overall-feedbacks/user/:user_id", rc.GetOverallFeedback)
 }

@@ -14,6 +14,7 @@ import (
 )
 
 func main() {
+		log.Println("Starting app...")
 	env := bootstrap.NewEnv()
 
 	// Create context with timeout
@@ -23,7 +24,7 @@ func main() {
 	mongoURI := env.DBUri
 
 	if mongoURI == "" {
-		mongoURI = "mongodb+srv://nardos_user:Dear@1234@cluster0.k7yt2ba.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+		mongoURI = "mongodb+srv://nardos_user:nardos_user@cluster0.k7yt2ba.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 		fmt.Println("DBUri environment variable is not set")
 	}
 

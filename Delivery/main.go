@@ -23,7 +23,7 @@ func main() {
 	mongoURI := env.DBUri
 
 	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017"
+		mongoURI = "mongodb+srv://nardos_user:Dear@1234@cluster0.k7yt2ba.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 		fmt.Println("DBUri environment variable is not set")
 	}
 

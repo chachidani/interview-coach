@@ -1,6 +1,7 @@
-# Build stage
-FROM golang:1.23-alpine AS builder
+# Use the official Golang image
+FROM golang:1.21-alpine
 
+# Set the working directory
 WORKDIR /app
 
 # Copy go mod and sum files
@@ -9,22 +10,11 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
-# Copy the source code
+# Copy the rest of the code
 COPY . .
 
-# Build the application
-RUN go build -o app
-
-# Run stage
-FROM alpine:latest
-
-WORKDIR /root/
-
-# Copy the built binary from the builder stage
-COPY --from=builder /app/app .
-
-# Expose the port the app runs on
-EXPOSE 8080
+# Build the Go app
+RUN go build -o app .
 
 # Command to run the executable
 CMD ["./app"]

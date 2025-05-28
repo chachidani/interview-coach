@@ -7,6 +7,7 @@ import (
 	domain "github.com/chachidani/interview-coach-backend/Domain"
 	"github.com/chachidani/interview-coach-backend/Infrastructure/middleware"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -39,7 +40,7 @@ func (s *signUpRepository) SignUp(c context.Context, signUpRequest domain.SignUp
 	var existingUser domain.User
 	err := collection.FindOne(c, bson.M{"email": signUpRequest.Email}).Decode(&existingUser)
 	if err == nil {
-		return domain.SignUpResponse{}, fmt.Errorf("user with username %s already exists", signUpRequest.Username)
+		return domain.SignUpResponse{}, fmt.Errorf("user with email %s already exists", signUpRequest.Email)
 	}
 
 	if err != mongo.ErrNoDocuments {
@@ -52,6 +53,7 @@ func (s *signUpRepository) SignUp(c context.Context, signUpRequest domain.SignUp
 	}
 
 	user := domain.User{
+		ID:       primitive.NewObjectID(),
 		Username: signUpRequest.Username,
 		Email:    signUpRequest.Email,
 		Password: hashedPassword,
@@ -66,7 +68,6 @@ func (s *signUpRepository) SignUp(c context.Context, signUpRequest domain.SignUp
 	return domain.SignUpResponse{
 		Message: "User created successfully",
 	}, nil
-
 }
 
 func NewSignUpRepository(database mongo.Database, collection string, passwordService *middleware.PasswordService) domain.SignUpRepository {

@@ -19,7 +19,6 @@ func main() {
 
 	mongoURI := env.DBUri
 	if mongoURI == "" {
-		mongoURI = "mongodb+srv://nardos_user:nardos_user@cluster0.k7yt2ba.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 		fmt.Println("DBUri environment variable is not set")
 	}
 
@@ -61,7 +60,7 @@ func main() {
 	// Start server
 	serverPort := env.ServerPort
 	if serverPort == "" {
-		serverPort = "8080"
+		fmt.Println("ServerPort environment variable is not set")
 	}
 
 	fmt.Printf("Server is running on port %s\n", serverPort)

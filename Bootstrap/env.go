@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -47,9 +48,30 @@ func NewEnv() *Env {
 }
 
 func (e *Env) loadEnv() {
-	err := godotenv.Load("interview-coach-backend/.env")
-	if err != nil {
-		log.Println("Error loading .env file, using default values")
+	// Try multiple possible locations for the .env file
+	envPaths := []string{
+		".env",                         // Current directory
+		"interview-coach-backend/.env", // Relative to current directory
+		"../.env",                      // Parent directory
+		"../../.env",                   // Two levels up
+	}
+
+	var loaded bool
+	for _, path := range envPaths {
+		if err := godotenv.Load(path); err == nil {
+			log.Printf("Successfully loaded .env file from: %s", path)
+			loaded = true
+			break
+		}
+	}
+
+	if !loaded {
+		log.Println("Warning: No .env file found in any of the expected locations. Using default values.")
+		log.Println("Expected locations:")
+		for _, path := range envPaths {
+			absPath, _ := filepath.Abs(path)
+			log.Printf("- %s", absPath)
+		}
 	}
 }
 

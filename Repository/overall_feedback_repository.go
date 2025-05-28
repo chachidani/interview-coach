@@ -30,6 +30,11 @@ func NewOverallFeedbackRepository(database *mongo.Database, collection string, g
 }
 
 func (r *OverallFeedbackRepository) CreateOverallFeedback(c context.Context, overallFeedback domain.OverallFeedback) error {
+	// Validate user ID
+	if overallFeedback.UserID.IsZero() {
+		return fmt.Errorf("invalid user ID")
+	}
+
 	// Get all completed rooms for the user
 	rooms, err := r.roomRepository.GetRoomsWithUserID(c, overallFeedback.UserID)
 	if err != nil {
@@ -124,6 +129,11 @@ Format your response as JSON:
 }
 
 func (r *OverallFeedbackRepository) GetOverallFeedback(c context.Context, userID primitive.ObjectID) ([]domain.OverallFeedback, error) {
+	// Validate user ID
+	if userID.IsZero() {
+		return nil, fmt.Errorf("invalid user ID")
+	}
+
 	collection := r.database.Collection(r.collection)
 	var feedbacks []domain.OverallFeedback
 

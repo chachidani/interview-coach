@@ -113,41 +113,41 @@ func (r *roomRepository) CreateRoom(c context.Context, room domain.Room) (string
 
 	initialMessage, err := r.geminiRepository.GenerateResponse(geminiRequest)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to generate initial message: %v", err)
 	}
+
+	// Ensure room has a valid ID
+	room.ID = primitive.NewObjectID()
 
 	// Add initial message to room
 	room.Messages = []domain.Message{
 		{
+			ID:        primitive.NewObjectID(),
 			Sender:    "ai",
 			Text:      initialMessage,
 			Timestamp: time.Now().Unix(),
 		},
 	}
 	room.CreatedAt = time.Now().Unix()
-
-	// Create a composite ID using roomID and topic
-	roomID := primitive.NewObjectID()
-	compositeID := fmt.Sprintf("%s_%s", roomID.Hex(), room.Topic)
-	room.ID = roomID
+	room.Status = "active"
 
 	// Save room to database
 	collection := r.database.Collection(r.collection)
 	_, err = collection.InsertOne(c, room)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create room: %v", err)
 	}
 
-	// Update user's rooms array with the composite ID
+	// Update user's rooms array with the room ID
 	userCollection := r.database.Collection("users")
 	_, err = userCollection.UpdateOne(
 		c,
 		bson.M{"_id": room.UserID},
-		bson.M{"$push": bson.M{"rooms": compositeID}},
+		bson.M{"$push": bson.M{"rooms": room.ID.Hex()}},
 	)
 	if err != nil {
 		// If updating user fails, we should delete the room to maintain consistency
-		_, _ = collection.DeleteOne(c, bson.M{"_id": compositeID})
+		_, _ = collection.DeleteOne(c, bson.M{"_id": room.ID})
 		return "", fmt.Errorf("failed to update user with room ID: %v", err)
 	}
 

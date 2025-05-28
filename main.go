@@ -63,7 +63,7 @@ func main() {
 		fmt.Println("ServerPort environment variable is not set")
 	}
 
-	fmt.Printf("Server is running on port %s\n", serverPort)
+	fmt.Printf("Server is running active on port %s\n", serverPort)
 	if err := r.Run(":" + serverPort); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

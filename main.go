@@ -7,6 +7,7 @@ import (
 
 	bootstrap "github.com/chachidani/interview-coach-backend/Bootstrap"
 	"github.com/chachidani/interview-coach-backend/Delivery/router"
+	"github.com/chachidani/interview-coach-backend/Infrastructure/middleware"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -53,6 +54,9 @@ func main() {
 	// Initialize Gin router
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
+
+	// Add CORS middleware
+	r.Use(middleware.CORSMiddleware())
 
 	// Setup routes
 	router.Setup(env, env.ContextTimeout, *db, r)

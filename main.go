@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	bootstrap "github.com/chachidani/interview-coach-backend/Bootstrap"
 	"github.com/chachidani/interview-coach-backend/Delivery/router"
-	"github.com/chachidani/interview-coach-backend/Infrastructure/middleware"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -56,7 +57,14 @@ func main() {
 	r := gin.Default()
 
 	// Add CORS middleware
-	r.Use(middleware.CORSMiddleware())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	// Setup routes
 	router.Setup(env, env.ContextTimeout, *db, r)

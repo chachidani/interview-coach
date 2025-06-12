@@ -20,6 +20,23 @@ func (uc *RoomController) CreateRoom(c *gin.Context) {
 		return
 	}
 
+	// Get user ID from JWT token context
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.IndentedJSON(http.StatusUnauthorized, config.ResponseData{Error: true, ErrorMessage: "User ID not found in token", SuccessResponse: false})
+		return
+	}
+
+	// Convert userID string to ObjectID
+	objectID, err := primitive.ObjectIDFromHex(userID.(string))
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: "Invalid user ID format", SuccessResponse: false})
+		return
+	}
+
+	// Set the user ID in the room object
+	room.UserID = objectID
+
 	roomResponse, err := uc.RoomUsecase.CreateRoom(c, room)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})
@@ -101,7 +118,7 @@ func (uc *RoomController) UpdateRoom(c *gin.Context) {
 func (uc *RoomController) CompletedRoom(c *gin.Context) {
 	roomID := c.Param("id")
 	userID := c.Param("user_id")
-	
+
 	if roomID == "" {
 		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: "room ID is required", SuccessResponse: false})
 		return
@@ -112,7 +129,7 @@ func (uc *RoomController) CompletedRoom(c *gin.Context) {
 		return
 	}
 
-	objectID, err := primitive.ObjectIDFromHex(userID)							
+	objectID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, config.ResponseData{Error: true, ErrorMessage: err.Error(), SuccessResponse: false})
 		return

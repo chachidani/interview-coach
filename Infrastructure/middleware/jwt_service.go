@@ -18,11 +18,11 @@ func NewJWTService(secretKey string) *JWTService {
 }
 
 // GenerateToken generates a new JWT token with the given claims
-func (js *JWTService) GenerateToken(username, role string) (string, error) {
+func (js *JWTService) GenerateToken(userID, email string) (string, error) {
 	claims := jwt.MapClaims{
-		"username": username,
-		"role":     role,
-		"exp":      time.Now().Add(time.Hour * 24).Unix(),
+		"userID": userID,
+		"email":  email,
+		"exp":    time.Now().Add(time.Hour * 24).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -54,6 +54,7 @@ func (js *JWTService) ValidateToken(tokenString string) (jwt.MapClaims, error) {
 
 	return nil, fmt.Errorf("invalid token")
 }
+
 // validate admin token
 func (js *JWTService) ValidateAdminToken(tokenString string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -69,7 +70,7 @@ func (js *JWTService) ValidateAdminToken(tokenString string) (jwt.MapClaims, err
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return claims, nil
-	}		
+	}
 
 	return nil, fmt.Errorf("invalid token")
 }
